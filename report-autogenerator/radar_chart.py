@@ -11,14 +11,14 @@ font_manager.fontManager.addfont('/usr/share/fonts/opentype/ipafont-gothic/ipag.
 plt.rcParams['font.family'] = 'IPAGothic'
 
 # 定数定義
-CHART_SIZE = (14, 14)         # グラフのサイズをさらに大きく
+CHART_SIZE = (10, 10)         # グラフのサイズを適度に
 MARKER_STYLE = 'o-'          # マーカーと線のスタイル
 LINE_WIDTH = 2               # 線の太さ
 FILL_ALPHA = 0.25           # 塗りつぶしの透明度
 MIN_RADIUS = 6              # 最小半径（データが少ない場合の見やすさ確保）
 TICK_INTERVAL = 5           # 目盛りの間隔
 BASE_VALUE = 1              # 基準値（0点に相当する値）
-DPI = 300                   # 画像の解像度
+DPI = 150                   # 画像の解像度を下げる
 LABEL_PADDING = 1.25        # ラベルの余白調整（グラフをより外側に広げる）を増加
 
 def prepare_plot_data(counts):
@@ -70,22 +70,41 @@ def configure_axes(ax, labels, values):
     angles = np.arange(0, 360, 30)
     ax.set_thetagrids(angles, labels)
     
+    # 最大値から外側のマージンを計算
+    max_value = max(values) * 1.1  # 10%マージン
+    outer_margin = 1.2  # ラベルを外側に配置するための係数
+    
     # ラベルのフォントサイズと位置の調整
     for label, angle in zip(ax.get_xticklabels(), angles):
-        # 角度に応じてラベルの配置を調整
-        if angle <= 90:
-            ha = 'left'
+        angle_rad = np.deg2rad(angle)
+        x = np.cos(angle_rad) * max_value * outer_margin
+        y = np.sin(angle_rad) * max_value * outer_margin
+        
+        # 12時の位置（社会医学）
+        if angle == 0:
+            ha = 'center'
             va = 'bottom'
-        elif angle <= 180:
-            ha = 'right'
-            va = 'bottom'
-        elif angle <= 270:
-            ha = 'right'
+            y *= 1.1  # さらに上に
+        
+        # 6時の位置（統合的臨床能力）
+        elif angle == 180:
+            ha = 'center'
             va = 'top'
+            y *= 1.1  # さらに下に
+        
+        # 1-5時の位置（30-150度）
+        elif 0 < angle < 180:
+            ha = 'left'
+            va = 'center'
+            x *= 1.1  # さらに左に
+        
+        # 7-11時の位置（210-330度）
         else:
-            ha = 'left'
-            va = 'top'
-            
+            ha = 'right'
+            va = 'center'
+            x *= 1.1  # さらに右に
+        
+        label.set_position((x, y))
         label.set_fontsize(16)  # フォントサイズ
         label.set_horizontalalignment(ha)
         label.set_verticalalignment(va)
