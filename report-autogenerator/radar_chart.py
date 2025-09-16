@@ -11,7 +11,7 @@ font_manager.fontManager.addfont('/usr/share/fonts/opentype/ipafont-gothic/ipag.
 plt.rcParams['font.family'] = 'IPAGothic'
 
 # 定数定義
-CHART_SIZE = (14, 14)         # グラフのサイズをさらに大きく
+CHART_SIZE = (16, 16)         # グラフのサイズをさらに大きく
 MARKER_STYLE = 'o-'          # マーカーと線のスタイル
 LINE_WIDTH = 2               # 線の太さ
 FILL_ALPHA = 0.25           # 塗りつぶしの透明度
@@ -19,7 +19,7 @@ MIN_RADIUS = 6              # 最小半径（データが少ない場合の見�
 TICK_INTERVAL = 5           # 目盛りの間隔
 BASE_VALUE = 1              # 基準値（0点に相当する値）
 DPI = 300                   # 画像の解像度
-LABEL_PADDING = 1.4         # ラベルの余白調整を増加
+LABEL_PADDING = 1.15        # ラベルの余白調整（グラフをより外側に広げる）を増加
 
 def prepare_plot_data(counts):
     """データを12時方向から時計回りに準備"""
@@ -58,8 +58,11 @@ def setup_radar_chart():
 def plot_data(ax, values, angles, title):
     """データのプロットと装飾"""
     # データのプロットと塗りつぶし
-    ax.plot(angles, values, MARKER_STYLE, linewidth=LINE_WIDTH, label=title)
+    ax.plot(angles, values, MARKER_STYLE, linewidth=LINE_WIDTH, label=title, markersize=8)  # マーカーサイズを大きく
     ax.fill(angles, values, alpha=FILL_ALPHA)
+    
+    # グリッド線の設定
+    ax.grid(True, linewidth=0.5, alpha=0.5)
 
 def configure_axes(ax, labels, values):
     """軸と目盛りの設定"""
@@ -73,7 +76,9 @@ def configure_axes(ax, labels, values):
             label.set_verticalalignment('bottom')
         else:
             label.set_verticalalignment('top')
-        label.set_fontsize(16)  # フォントサイズを2倍に
+        label.set_fontsize(16)  # フォントサイズ
+        # ラベルをさらに外側に配置
+        label.set_position((1.1, 1.1))
     
     # 半径軸の設定
     rmax = max(max(values), MIN_RADIUS) + 1
