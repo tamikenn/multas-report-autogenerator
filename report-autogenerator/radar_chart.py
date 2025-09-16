@@ -11,7 +11,7 @@ font_manager.fontManager.addfont('/usr/share/fonts/opentype/ipafont-gothic/ipag.
 plt.rcParams['font.family'] = 'IPAGothic'
 
 # 定数定義
-CHART_SIZE = (10, 10)         # グラフのサイズ
+CHART_SIZE = (14, 14)         # グラフのサイズをさらに大きく
 MARKER_STYLE = 'o-'          # マーカーと線のスタイル
 LINE_WIDTH = 2               # 線の太さ
 FILL_ALPHA = 0.25           # 塗りつぶしの透明度
@@ -19,6 +19,7 @@ MIN_RADIUS = 6              # 最小半径（データが少ない場合の見�
 TICK_INTERVAL = 5           # 目盛りの間隔
 BASE_VALUE = 1              # 基準値（0点に相当する値）
 DPI = 300                   # 画像の解像度
+LABEL_PADDING = 1.4         # ラベルの余白調整を増加
 
 def prepare_plot_data(counts):
     """データを12時方向から時計回りに準備"""
@@ -29,7 +30,23 @@ def prepare_plot_data(counts):
     # グラフを閉じるため最初の値を最後に追加
     values.append(values[0])
     
-    return values, [f'{h}時' for h in hours]
+    # 分類名の定義
+    category_names = {
+        12: '社会医学',
+        1: '医療倫理',
+        2: '地域医療',
+        3: '医学的知識',
+        4: '診察・手技',
+        5: '問題解決能力',
+        6: '統合的臨床能力',
+        7: '多職種連携',
+        8: 'コミュニケーション',
+        9: '一般教養',
+        10: '保健・福祉',
+        11: '行政'
+    }
+    
+    return values, [category_names[h] for h in hours]
 
 def setup_radar_chart():
     """レーダーチャートの基本設定"""
@@ -47,11 +64,20 @@ def plot_data(ax, values, angles, title):
 def configure_axes(ax, labels, values):
     """軸と目盛りの設定"""
     # 角度軸の設定（30度ごとにラベル）
-    ax.set_thetagrids(np.arange(0, 360, 30), labels)
+    angles = np.arange(0, 360, 30)
+    ax.set_thetagrids(angles, labels)
+    
+    # ラベルのフォントサイズと位置の調整
+    for label, angle in zip(ax.get_xticklabels(), angles):
+        if angle < 180:
+            label.set_verticalalignment('bottom')
+        else:
+            label.set_verticalalignment('top')
+        label.set_fontsize(16)  # フォントサイズを2倍に
     
     # 半径軸の設定
     rmax = max(max(values), MIN_RADIUS) + 1
-    ax.set_rlim(0, rmax)
+    ax.set_rlim(0, rmax * LABEL_PADDING)  # ラベルの余白を確保
     
     # 目盛りの設定
     rticks = list(range(BASE_VALUE, rmax, TICK_INTERVAL))
@@ -81,8 +107,8 @@ def create_radar_chart(counts, sheet_name, out_dir):
     # 軸と目盛りの設定
     configure_axes(ax, labels, values)
     
-    # タイトルの設定
-    ax.set_title(f'{sheet_name}のAPI分類レーダーチャート')
+    # タイトルの設定（フォントサイズを大きく）
+    ax.set_title(f'{sheet_name}のAPI分類レーダーチャート', fontsize=18, pad=20)
     
     # 画像の保存
     out_path = os.path.join(out_dir, f'{sheet_name}_radar.png')
