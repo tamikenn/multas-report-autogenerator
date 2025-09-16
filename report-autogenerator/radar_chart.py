@@ -19,7 +19,7 @@ MIN_RADIUS = 6              # 最小半径（データが少ない場合の見�
 TICK_INTERVAL = 5           # 目盛りの間隔
 BASE_VALUE = 1              # 基準値（0点に相当する値）
 DPI = 300                   # 画像の解像度
-LABEL_PADDING = 1.15        # ラベルの余白調整（グラフをより外側に広げる）を増加
+LABEL_PADDING = 1.25        # ラベルの余白調整（グラフをより外側に広げる）を増加
 
 def prepare_plot_data(counts):
     """データを12時方向から時計回りに準備"""
@@ -72,13 +72,24 @@ def configure_axes(ax, labels, values):
     
     # ラベルのフォントサイズと位置の調整
     for label, angle in zip(ax.get_xticklabels(), angles):
-        if angle < 180:
-            label.set_verticalalignment('bottom')
+        # 角度に応じてラベルの配置を調整
+        angle_rad = np.deg2rad(angle)
+        if angle <= 90:
+            ha = 'left'
+            va = 'bottom'
+        elif angle <= 180:
+            ha = 'right'
+            va = 'bottom'
+        elif angle <= 270:
+            ha = 'right'
+            va = 'top'
         else:
-            label.set_verticalalignment('top')
+            ha = 'left'
+            va = 'top'
+            
         label.set_fontsize(16)  # フォントサイズ
-        # ラベルをさらに外側に配置
-        label.set_position((1.1, 1.1))
+        label.set_horizontalalignment(ha)
+        label.set_verticalalignment(va)
     
     # 半径軸の設定
     rmax = max(max(values), MIN_RADIUS) + 1
