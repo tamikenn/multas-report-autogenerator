@@ -5,75 +5,111 @@ import matplotlib.pyplot as plt
 import numpy as np
 import glob
 
-def create_radar_chart(counts, sheet_name, out_dir):
-    """
-    12時方向から時計回りにレーダーチャートを生成
-    counts: Counter object with values for 1-12
-    """
-    # データを12時から時計回りに配置 [12,1,2,...,11]
-    hour_order = [12] + list(range(1, 12))
-    # 各値に1を加算して基準値を設定（0点の位置を半径1の位置に）
-    values = [counts.get(h, 0) + 1 for h in hour_order]
-    
-    # グラフを閉じるため最初の値を最後にも追加
+# 定数定義
+CHART_SIZE = (10, 10)         # グラフのサイズ
+MARKER_STYLE = 'o-'          # マーカーと線のスタイル
+LINE_WIDTH = 2               # 線の太さ
+FILL_ALPHA = 0.25           # 塗りつぶしの透明度
+MIN_RADIUS = 6              # 最小半径（データが少ない場合の見やすさ確保）
+TICK_INTERVAL = 5           # 目盛りの間隔
+BASE_VALUE = 1              # 基準値（0点に相当する値）
+DPI = 300                   # 画像の解像度
+
+def prepare_plot_data(counts):
+    """データを12時方向から時計回りに準備"""
+    # [12, 1, 2, ..., 11] の順序で値を取得
+    hours = [12] + list(range(1, 12))
+    # 各値に基準値を加算
+    values = [counts.get(h, 0) + BASE_VALUE for h in hours]
+    # グラフを閉じるため最初の値を最後に追加
     values.append(values[0])
     
-    # 角度の設定（12時=0°から時計回り）
-    angles = np.linspace(0, 2*np.pi, len(values), endpoint=True)
-    
-    # ラベルは12個（時計の文字盤）
-    labels = [f'{h}時' for h in hour_order]
-    
-    # プロット
-    fig, ax = plt.subplots(figsize=(10, 10), subplot_kw={'polar': True})
+    return values, [f'{h}時' for h in hours]
+
+def setup_radar_chart():
+    """レーダーチャートの基本設定"""
+    fig, ax = plt.subplots(figsize=CHART_SIZE, subplot_kw={'polar': True})
     ax.set_theta_zero_location('N')    # 0°を北（12時）に
     ax.set_theta_direction(-1)         # 時計回り
-    
+    return fig, ax
+
+def plot_data(ax, values, angles, title):
+    """データのプロットと装飾"""
     # データのプロットと塗りつぶし
-    ax.plot(angles, values, 'o-', linewidth=2, label=sheet_name)
-    ax.fill(angles, values, alpha=0.25)
-    
-    # 軸の設定
+    ax.plot(angles, values, MARKER_STYLE, linewidth=LINE_WIDTH, label=title)
+    ax.fill(angles, values, alpha=FILL_ALPHA)
+
+def configure_axes(ax, labels, values):
+    """軸と目盛りの設定"""
+    # 角度軸の設定（30度ごとにラベル）
     ax.set_thetagrids(np.arange(0, 360, 30), labels)
-    rmax = max(max(values), 6) + 1  # 最小値を調整（データが少ない場合でも見やすく）
-    ax.set_rlim(0, rmax)  # 原点を0に設定
+    
+    # 半径軸の設定
+    rmax = max(max(values), MIN_RADIUS) + 1
+    ax.set_rlim(0, rmax)
     
     # 目盛りの設定
-    # 実際の半径から1を引いて表示（半径1を0として表示）
-    rticks = list(range(1, rmax, 5))  # 1から開始して5刻みで目盛りを設定
+    rticks = list(range(BASE_VALUE, rmax, TICK_INTERVAL))
     ax.set_yticks(rticks)
-    # 目盛りのラベルを調整（実際の値から1を引く）
-    ax.set_yticklabels([str(int(x - 1)) for x in rticks])
+    # 表示値を実際の値からBASE_VALUE分引く
+    ax.set_yticklabels([str(int(x - BASE_VALUE)) for x in rticks])
+
+def create_radar_chart(counts, sheet_name, out_dir):
+    """
+    API分類のレーダーチャートを生成
     
-    # タイトル
+    Parameters:
+        counts (Counter): 1-12の値を持つCounterオブジェクト
+        sheet_name (str): シート名（タイトルとファイル名に使用）
+        out_dir (str): 出力ディレクトリのパス
+    """
+    # データの準備
+    values, labels = prepare_plot_data(counts)
+    angles = np.linspace(0, 2*np.pi, len(values), endpoint=True)
+    
+    # グラフの基本設定
+    fig, ax = setup_radar_chart()
+    
+    # データのプロット
+    plot_data(ax, values, angles, sheet_name)
+    
+    # 軸と目盛りの設定
+    configure_axes(ax, labels, values)
+    
+    # タイトルの設定
     ax.set_title(f'{sheet_name}のAPI分類レーダーチャート')
     
-    # 保存
+    # 画像の保存
     out_path = os.path.join(out_dir, f'{sheet_name}_radar.png')
-    plt.savefig(out_path, bbox_inches='tight', dpi=300)
+    plt.savefig(out_path, bbox_inches='tight', dpi=DPI)
     plt.close()
     print(f'レーダーチャート画像を保存: {out_path}')
 
-# 出力ディレクトリの準備
-out_dir = os.path.join(os.path.dirname(__file__), 'output')
-os.makedirs(out_dir, exist_ok=True)
-for f in glob.glob(os.path.join(out_dir, '*_radar.png')):
-    os.remove(f)
-
-# データ取得と処理
-data_dir = os.path.join(os.path.dirname(__file__), 'source_data')
-for excel_file in [f for f in os.listdir(data_dir) if f.endswith('.xlsx')]:
-    file_path = os.path.join(data_dir, excel_file)
-    xls = pd.ExcelFile(file_path)
+# メインの処理
+if __name__ == '__main__':
+    # 出力ディレクトリの準備
+    out_dir = os.path.join(os.path.dirname(__file__), 'output')
+    os.makedirs(out_dir, exist_ok=True)
     
-    for sheet in xls.sheet_names:
-        if sheet == 'overall':
-            continue
-            
-        # シートからデータ取得とカウント
-        df = pd.read_excel(xls, sheet_name=sheet)
-        api_counts = Counter(df['API検証'])
-        print(f'{sheet} のAPI分類値カウント:', [api_counts.get(i, 0) for i in range(1, 13)])
+    # 既存の画像ファイルを削除
+    for f in glob.glob(os.path.join(out_dir, '*_radar.png')):
+        os.remove(f)
+    
+    # Excelファイルの処理
+    data_dir = os.path.join(os.path.dirname(__file__), 'source_data')
+    for excel_file in [f for f in os.listdir(data_dir) if f.endswith('.xlsx')]:
+        file_path = os.path.join(data_dir, excel_file)
+        xls = pd.ExcelFile(file_path)
         
-        # レーダーチャート生成
-        create_radar_chart(api_counts, sheet, out_dir)
+        # 各シートの処理
+        for sheet in xls.sheet_names:
+            if sheet == 'overall':
+                continue
+            
+            # シートからデータ取得とカウント
+            df = pd.read_excel(xls, sheet_name=sheet)
+            api_counts = Counter(df['API検証'])
+            print(f'{sheet} のAPI分類値カウント:', [api_counts.get(i, 0) for i in range(1, 13)])
+            
+            # レーダーチャート生成
+            create_radar_chart(api_counts, sheet, out_dir)
