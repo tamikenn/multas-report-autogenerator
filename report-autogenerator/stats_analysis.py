@@ -4,10 +4,10 @@ from collections import Counter
 from reportlab.lib import colors
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-from reportlab.lib.units import mm
+from reportlab.lib.units import mm, inch
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
-from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, PageBreak, Image
 
 # フォント設定
 FONT_NAME = 'IPAGothic'
@@ -48,43 +48,39 @@ def create_stats_report(df, student_name, output_path):
         fontName=FONT_NAME,
         fontSize=14,
         leading=16,
-        spaceAfter=10
-    ))
-    styles.add(ParagraphStyle(
-        name='StatsNormal',
-        fontName=FONT_NAME,
-        fontSize=10,
-        leading=14
+        spaceAfter=10,
+        alignment=1  # 中央揃え
     ))
     styles.add(ParagraphStyle(
         name='StatsHeading',
         fontName=FONT_NAME,
         fontSize=12,
         leading=14,
-        spaceBefore=10,
-        spaceAfter=5
+        spaceBefore=8,
+        spaceAfter=4
     ))
     
     # レーダーチャート画像のパス
     radar_path = os.path.join(os.path.dirname(output_path), f"{os.path.splitext(os.path.basename(output_path))[0].replace('_stats', '')}_radar.png")
-
-    from reportlab.platypus import Image, PageBreak
+    
     story = []
     
     # 1ページ目: レーダーチャートと基本統計
     title = Paragraph(f"{student_name}の統計データ", styles['StatsTitle'])
     story.append(title)
     
-    # レーダーチャートとテーブルを横に配置するための設定
+    # レーダーチャートの読み込みとリサイズ
     if os.path.exists(radar_path):
-        # レーダーチャートの読み込みとリサイズ
         radar_img = Image(radar_path)
-        radar_width = 250
+        radar_width = 300
         aspect_ratio = radar_img.imageHeight / radar_img.imageWidth
         radar_img.drawWidth = radar_width
         radar_img.drawHeight = radar_width * aspect_ratio
+        story.append(radar_img)
+    story.append(Spacer(1, 10))
     
     # ①日別投稿数の集計
+    story.append(Paragraph('①日別投稿数の集計', styles['StatsHeading']))
     daily_counts = df.groupby('DAY').size()
     total_posts = len(df)
     
@@ -94,7 +90,7 @@ def create_stats_report(df, student_name, output_path):
         daily_data.append([f'Day {day}', str(count)])
     daily_data.append(['合計', str(total_posts)])
     
-    daily_table = Table(daily_data, colWidths=[60, 60])
+    daily_table = Table(daily_data, colWidths=[80, 80])
     daily_table.setStyle(TableStyle([
         ('FONT', (0, 0), (-1, -1), FONT_NAME),
         ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
@@ -102,8 +98,11 @@ def create_stats_report(df, student_name, output_path):
         ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
         ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
     ]))
+    story.append(daily_table)
+    story.append(Spacer(1, 15))
     
-    # 分類別記録数のランキング
+    # ②分類別記録数のランキング
+    story.append(Paragraph('②分類別記録数のランキング', styles['StatsHeading']))
     category_counts = df['API検証'].value_counts().reindex(range(1, 13), fill_value=0)
     ranking_data = [['順位', '分類', '記録数', '割合']]
     
@@ -116,7 +115,7 @@ def create_stats_report(df, student_name, output_path):
             f'{percentage:.1f}%'
         ])
 
-    ranking_table = Table(ranking_data, colWidths=[30, 150, 50, 50])
+    ranking_table = Table(ranking_data, colWidths=[40, 280, 60, 60])
     ranking_table.setStyle(TableStyle([
         ('FONT', (0, 0), (-1, -1), FONT_NAME),
         ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
@@ -190,16 +189,17 @@ def create_stats_report(df, student_name, output_path):
             row.append(str(count))
         matrix_data.append(row)
 
-    t = Table(matrix_data, colWidths=[200] + [50]*5)
-    t.setStyle(TableStyle([
+    table_matrix = Table(matrix_data, colWidths=[250] + [50]*5)
+    table_matrix.setStyle(TableStyle([
         ('FONT', (0, 0), (-1, -1), FONT_NAME),
         ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
         ('ALIGN', (0, 0), (0, -1), 'LEFT'),
         ('GRID', (0, 0), (-1, -1), 1, colors.black),
         ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
         ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+        ('FONTSIZE', (0, 0), (-1, -1), 9),  # フォントサイズを小さくして1ページに収まるように
     ]))
-    story.append(t)
+    story.append(table_matrix)
 
     # PDFの生成
     doc.build(story)
