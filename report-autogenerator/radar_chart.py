@@ -4,6 +4,11 @@ from collections import Counter
 import matplotlib.pyplot as plt
 import numpy as np
 import glob
+from matplotlib import font_manager
+
+# 日本語フォントの設定
+font_manager.fontManager.addfont('/usr/share/fonts/opentype/ipafont-gothic/ipag.ttf')
+plt.rcParams['font.family'] = 'IPAGothic'
 
 # 定数定義
 CHART_SIZE = (10, 10)         # グラフのサイズ
