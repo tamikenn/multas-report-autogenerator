@@ -11,7 +11,7 @@ font_manager.fontManager.addfont('/usr/share/fonts/opentype/ipafont-gothic/ipag.
 plt.rcParams['font.family'] = 'IPAGothic'
 
 # 定数定義
-CHART_SIZE = (16, 16)         # グラフのサイズをさらに大きく
+CHART_SIZE = (14, 14)         # グラフのサイズをさらに大きく
 MARKER_STYLE = 'o-'          # マーカーと線のスタイル
 LINE_WIDTH = 2               # 線の太さ
 FILL_ALPHA = 0.25           # 塗りつぶしの透明度
@@ -73,7 +73,6 @@ def configure_axes(ax, labels, values):
     # ラベルのフォントサイズと位置の調整
     for label, angle in zip(ax.get_xticklabels(), angles):
         # 角度に応じてラベルの配置を調整
-        angle_rad = np.deg2rad(angle)
         if angle <= 90:
             ha = 'left'
             va = 'bottom'
