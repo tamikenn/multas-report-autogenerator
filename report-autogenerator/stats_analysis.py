@@ -216,39 +216,6 @@ def create_stats_report(df, student_name, output_path):
     
     # 2ページ目の要素を追加
     story.extend(create_page_two(df, styles))
-    story.append(Paragraph('③日別・分類別記録数', styles['StatsHeading']))
-    story.append(Spacer(1, 5))
-    
-    # ピボットテーブルを作成
-    pivot_data = pd.pivot_table(
-        df,
-        values='入力内容',
-        index='API検証',
-        columns='DAY',
-        aggfunc='count',
-        fill_value=0
-    ).reindex(range(1, 13), fill_value=0)
-    
-    # テーブルデータの作成
-    matrix_data = [['分類 \\ Day', 'Day 1', 'Day 2', 'Day 3', 'Day 4', 'Day 5']]
-    for category in range(1, 13):
-        row = [CATEGORY_NAMES[category]]
-        for day in range(1, 6):
-            count = pivot_data.get(day, pd.Series())[category] if day in pivot_data else 0
-            row.append(str(count))
-        matrix_data.append(row)
-
-    table_matrix = Table(matrix_data, colWidths=[250] + [50]*5)
-    table_matrix.setStyle(TableStyle([
-        ('FONT', (0, 0), (-1, -1), FONT_NAME),
-        ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
-        ('ALIGN', (0, 0), (0, -1), 'LEFT'),
-        ('GRID', (0, 0), (-1, -1), 1, colors.black),
-        ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
-        ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
-        ('FONTSIZE', (0, 0), (-1, -1), 9),  # フォントサイズを小さくして1ページに収まるように
-    ]))
-    story.append(table_matrix)
 
     # PDFの生成
     doc.build(story)
