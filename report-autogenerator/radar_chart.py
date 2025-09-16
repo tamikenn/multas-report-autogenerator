@@ -11,14 +11,14 @@ font_manager.fontManager.addfont('/usr/share/fonts/opentype/ipafont-gothic/ipag.
 plt.rcParams['font.family'] = 'IPAGothic'
 
 # 定数定義
-CHART_SIZE = (10, 10)         # グラフのサイズを適度に
+CHART_SIZE = (14, 14)         # グラフのサイズをさらに大きく
 MARKER_STYLE = 'o-'          # マーカーと線のスタイル
 LINE_WIDTH = 2               # 線の太さ
 FILL_ALPHA = 0.25           # 塗りつぶしの透明度
 MIN_RADIUS = 6              # 最小半径（データが少ない場合の見やすさ確保）
 TICK_INTERVAL = 5           # 目盛りの間隔
 BASE_VALUE = 1              # 基準値（0点に相当する値）
-DPI = 150                   # 画像の解像度を下げる
+DPI = 300                   # 画像の解像度
 LABEL_PADDING = 1.25        # ラベルの余白調整（グラフをより外側に広げる）を増加
 
 def prepare_plot_data(counts):
