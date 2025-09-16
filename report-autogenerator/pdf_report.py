@@ -106,19 +106,14 @@ def create_pdf_report(df, student_name, output_path):
     for category in range(1, 13):
         category_entries = df[df['API検証'] == category]
         if len(category_entries) > 0:
-            # カテゴリヘッダー（余白調整）
+            # カテゴリヘッダー（次の内容と一緒に表示）
             story.append(Spacer(1, 5))  # カテゴリー前に少し余白を追加
-            header = Paragraph(
-                f"■ {CATEGORY_NAMES[category]}（API分類{category}）",
-                styles['CategoryHeader']
-            )
-            story.append(header)
             
             # 記録を日付でグループ化
             grouped_data = {}
             for _, entry in category_entries.iterrows():
                 day = entry['DAY']
-                content = str(entry['入力内容']).replace('\n', '<br/>')
+                content = str(entry['入力内容']).replace('\n', ' ')  # 改行を空白に置換
                 if day not in grouped_data:
                     grouped_data[day] = []
                 grouped_data[day].append(content)
@@ -126,18 +121,24 @@ def create_pdf_report(df, student_name, output_path):
             # 記録の一覧を表形式で表示
             data = []
             for day in sorted(grouped_data.keys()):
-                # Day表記を独立した行として追加
-                data.append([
-                    Paragraph(f'Day {day}', styles['DayHeader']),
-                    Paragraph('', styles['Japanese'])
-                ])
-                
-                # その日の記録を追加（短文ごとに別々の行として追加）
+                first_content = True
+                first_day = len(data) == 0  # このカテゴリーの最初のDayかどうか
                 for content in grouped_data[day]:
-                    data.append([
-                        Paragraph(content, styles['Japanese']),
-                        Paragraph('', styles['Japanese'])
-                    ])
+                    if first_content:
+                        # 最初の記録はDay表示と同じ行に配置
+                        header_text = (f"■ {CATEGORY_NAMES[category]}（API分類{category}）  Day {day}  {content}"
+                                     if first_day else f"Day {day}  {content}")
+                        data.append([
+                            Paragraph(header_text, styles['CategoryHeader'] if first_day else styles['DayHeader']),
+                            Paragraph('', styles['Japanese'])
+                        ])
+                        first_content = False
+                    else:
+                        # 2つ目以降の記録は新しい行に配置
+                        data.append([
+                            Paragraph(content, styles['Japanese']),
+                            Paragraph('', styles['Japanese'])
+                        ])
             
             if data:
                 # テーブルスタイルの設定
