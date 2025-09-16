@@ -51,12 +51,21 @@ def create_daily_stats_table(df, styles):
     return table, total_posts
 
 def create_ranking_table(df, total_posts, styles):
-    """分類別ランキングテーブルを作成"""
+    """分類別ランキングテーブルを作成（割合の高い順）"""
     category_counts = df['API検証'].value_counts().reindex(range(1, 13), fill_value=0)
     ranking_data = [['順位', '分類', '記録数', '割合']]
     
-    for rank, (category, count) in enumerate(category_counts.items(), 1):
+    # カテゴリーごとの記録数とパーセンテージを計算し、パーセンテージでソート
+    category_stats = []
+    for category, count in category_counts.items():
         percentage = (count / total_posts * 100) if total_posts > 0 else 0
+        category_stats.append((category, count, percentage))
+    
+    # パーセンテージの降順でソート
+    category_stats.sort(key=lambda x: x[2], reverse=True)
+    
+    # ソートされた順でデータを追加
+    for rank, (category, count, percentage) in enumerate(category_stats, 1):
         ranking_data.append([
             str(rank),
             f'{CATEGORY_NAMES[category]}',
@@ -88,22 +97,38 @@ def create_detail_table(df, styles):
     ).reindex(range(1, 13), fill_value=0)
     
     # テーブルデータの作成
-    matrix_data = [['分類 \\ Day', 'Day 1', 'Day 2', 'Day 3', 'Day 4', 'Day 5']]
+    matrix_data = [['分類 \\ Day', 'Day 1', 'Day 2', 'Day 3', 'Day 4', 'Day 5', '合計']]
     for category in range(1, 13):
         row = [CATEGORY_NAMES[category]]
+        category_total = 0
         for day in range(1, 6):
             count = pivot_data.get(day, pd.Series())[category] if day in pivot_data else 0
+            category_total += count
             row.append(str(count))
+        row.append(str(category_total))  # 合計列を追加
         matrix_data.append(row)
     
-    table = Table(matrix_data, colWidths=[250] + [50]*5)
+    # 日別合計行を追加
+    daily_totals = ['合計']
+    total_sum = 0
+    for day in range(1, 6):
+        day_total = sum(int(row[day]) for row in matrix_data[1:])
+        daily_totals.append(str(day_total))
+        total_sum += day_total
+    daily_totals.append(str(total_sum))
+    matrix_data.append(daily_totals)
+    
+    table = Table(matrix_data, colWidths=[200] + [45]*6)  # 列幅を調整
     table.setStyle(TableStyle([
         ('FONT', (0, 0), (-1, -1), FONT_NAME),
         ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
         ('ALIGN', (0, 0), (0, -1), 'LEFT'),
         ('GRID', (0, 0), (-1, -1), 1, colors.black),
-        ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
+        ('BACKGROUND', (0, 0), (-1, 0), colors.grey),  # ヘッダー行の背景
+        ('BACKGROUND', (0, -1), (-1, -1), colors.grey),  # 合計行の背景
+        ('BACKGROUND', (-1, 0), (-1, -2), colors.lightgrey),  # 合計列の背景
         ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+        ('TEXTCOLOR', (0, -1), (-1, -1), colors.whitesmoke),
         ('FONTSIZE', (0, 0), (-1, -1), 9),
     ]))
     return table
