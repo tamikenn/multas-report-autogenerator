@@ -57,12 +57,21 @@ def setup_radar_chart():
 
 def plot_data(ax, values, angles, title):
     """データのプロットと装飾"""
-    # データのプロットと塗りつぶし
-    ax.plot(angles, values, MARKER_STYLE, linewidth=LINE_WIDTH, label=title, markersize=8)  # マーカーサイズを大きく
-    ax.fill(angles, values, alpha=FILL_ALPHA)
+    # グリッド線の設定（薄く）
+    ax.grid(True, linewidth=0.5, alpha=0.2)
     
-    # グリッド線の設定
-    ax.grid(True, linewidth=0.5, alpha=0.5)
+    # 外周の円を描画
+    max_value = max(values) * 1.1
+    circle = plt.Circle((0, 0), max_value, fill=False, color='gray', alpha=0.2, linewidth=1)
+    ax.add_artist(circle)
+    
+    # データのプロットと塗りつぶし
+    ax.plot(angles, values, MARKER_STYLE, linewidth=3, label=title, markersize=8, color='#1f77b4')  # 線を太く
+    ax.fill(angles, values, alpha=0.3, color='#1f77b4')  # 半透明の塗りつぶし
+    
+    # 最大値の表示
+    plt.text(0, max_value, f'最大値: {int(max(values)-1)}', 
+             ha='center', va='bottom', fontsize=12, color='gray')
 
 def configure_axes(ax, labels, values):
     """軸と目盛りの設定"""
@@ -86,6 +95,8 @@ def configure_axes(ax, labels, values):
             ha = 'left'
             va = 'top'
             
+        # ラベルに白い背景を追加
+        label.set_bbox(dict(facecolor='white', alpha=0.7, edgecolor='none'))
         label.set_fontsize(16)  # フォントサイズ
         label.set_horizontalalignment(ha)
         label.set_verticalalignment(va)
