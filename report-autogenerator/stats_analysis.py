@@ -75,6 +75,39 @@ def create_ranking_table(df, total_posts, styles):
     ]))
     return table
 
+def create_detail_table(df, styles):
+    """詳細な日別・分類別記録数テーブルを作成"""
+    # ピボットテーブルを作成
+    pivot_data = pd.pivot_table(
+        df,
+        values='入力内容',
+        index='API検証',
+        columns='DAY',
+        aggfunc='count',
+        fill_value=0
+    ).reindex(range(1, 13), fill_value=0)
+    
+    # テーブルデータの作成
+    matrix_data = [['分類 \\ Day', 'Day 1', 'Day 2', 'Day 3', 'Day 4', 'Day 5']]
+    for category in range(1, 13):
+        row = [CATEGORY_NAMES[category]]
+        for day in range(1, 6):
+            count = pivot_data.get(day, pd.Series())[category] if day in pivot_data else 0
+            row.append(str(count))
+        matrix_data.append(row)
+    
+    table = Table(matrix_data, colWidths=[250] + [50]*5)
+    table.setStyle(TableStyle([
+        ('FONT', (0, 0), (-1, -1), FONT_NAME),
+        ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+        ('ALIGN', (0, 0), (0, -1), 'LEFT'),
+        ('GRID', (0, 0), (-1, -1), 1, colors.black),
+        ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
+        ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+        ('FONTSIZE', (0, 0), (-1, -1), 9),
+    ]))
+    return table
+
 def create_page_one(df, student_name, radar_path, styles, doc_width):
     """1ページ目：レーダーチャートと基本統計を生成"""
     story = []
@@ -132,36 +165,9 @@ def create_page_two(df, styles):
     story.append(Paragraph('③日別・分類別記録数', styles['StatsHeading']))
     story.append(Spacer(1, 10))
     
-    # ピボットテーブルを作成
-    pivot_data = pd.pivot_table(
-        df,
-        values='入力内容',
-        index='API検証',
-        columns='DAY',
-        aggfunc='count',
-        fill_value=0
-    ).reindex(range(1, 13), fill_value=0)
-    
-    # テーブルデータの作成
-    matrix_data = [['分類 \\ Day', 'Day 1', 'Day 2', 'Day 3', 'Day 4', 'Day 5']]
-    for category in range(1, 13):
-        row = [CATEGORY_NAMES[category]]
-        for day in range(1, 6):
-            count = pivot_data.get(day, pd.Series())[category] if day in pivot_data else 0
-            row.append(str(count))
-        matrix_data.append(row)
-    
-    table_matrix = Table(matrix_data, colWidths=[250] + [50]*5)
-    table_matrix.setStyle(TableStyle([
-        ('FONT', (0, 0), (-1, -1), FONT_NAME),
-        ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
-        ('ALIGN', (0, 0), (0, -1), 'LEFT'),
-        ('GRID', (0, 0), (-1, -1), 1, colors.black),
-        ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
-        ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
-        ('FONTSIZE', (0, 0), (-1, -1), 9),
-    ]))
-    story.append(table_matrix)
+    # 詳細テーブルを作成
+    detail_table = create_detail_table(df, styles)
+    story.append(detail_table)
     
     return story
 
@@ -216,7 +222,7 @@ def create_stats_report(df, student_name, output_path):
     
     # 2ページ目の要素を追加
     story.extend(create_page_two(df, styles))
-
+    
     # PDFの生成
     doc.build(story)
 
