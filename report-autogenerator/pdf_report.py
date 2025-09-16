@@ -49,7 +49,9 @@ def create_pdf_report(df, student_name, output_path):
         name='Japanese',
         fontName='IPAGothic',
         fontSize=10,
-        leading=14  # 行間
+        leading=14,  # 行間
+        spaceBefore=6,  # 段落前のスペース
+        spaceAfter=6   # 段落後のスペース
     ))
     styles.add(ParagraphStyle(
         name='JapaneseTitle',
@@ -63,8 +65,17 @@ def create_pdf_report(df, student_name, output_path):
         fontName='IPAGothic',
         fontSize=12,
         leading=14,
-        spaceBefore=10,
-        spaceAfter=5,
+        spaceBefore=15,  # カテゴリー前の余白を増やす
+        spaceAfter=8,
+        textColor=colors.HexColor('#2F5496')
+    ))
+    styles.add(ParagraphStyle(
+        name='DayHeader',
+        fontName='IPAGothic',
+        fontSize=11,
+        leading=14,
+        spaceBefore=12,  # Day前の余白を増やす
+        spaceAfter=6,
         textColor=colors.HexColor('#2F5496')
     ))
     
@@ -80,7 +91,12 @@ def create_pdf_report(df, student_name, output_path):
     
     # 日程一覧
     schedule_text = Paragraph(
-        "Day1 2025/7/28  Day2 2025/7/29  Day3 2025/7/30  Day4 2025/7/31  Day5 2025/8/1",
+        "実習日程:<br/>" +
+        "Day1: 2025/7/28<br/>" +
+        "Day2: 2025/7/29<br/>" +
+        "Day3: 2025/7/30<br/>" +
+        "Day4: 2025/7/31<br/>" +
+        "Day5: 2025/8/1",
         styles['Japanese']
     )
     story.append(schedule_text)
@@ -90,7 +106,8 @@ def create_pdf_report(df, student_name, output_path):
     for category in range(1, 13):
         category_entries = df[df['API検証'] == category]
         if len(category_entries) > 0:
-            # カテゴリヘッダー
+            # カテゴリヘッダー（余白調整）
+            story.append(Spacer(1, 5))  # カテゴリー前に少し余白を追加
             header = Paragraph(
                 f"■ {CATEGORY_NAMES[category]}（API分類{category}）",
                 styles['CategoryHeader']
@@ -111,11 +128,11 @@ def create_pdf_report(df, student_name, output_path):
             for day in sorted(grouped_data.keys()):
                 # Day表記を独立した行として追加
                 data.append([
-                    Paragraph(f'Day {day}', styles['CategoryHeader']),
+                    Paragraph(f'Day {day}', styles['DayHeader']),
                     Paragraph('', styles['Japanese'])
                 ])
                 
-                # その日の記録を追加（全て左端から開始）
+                # その日の記録を追加（短文ごとに別々の行として追加）
                 for content in grouped_data[day]:
                     data.append([
                         Paragraph(content, styles['Japanese']),
