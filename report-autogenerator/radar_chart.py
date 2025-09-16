@@ -70,54 +70,25 @@ def configure_axes(ax, labels, values):
     angles = np.arange(0, 360, 30)
     ax.set_thetagrids(angles, labels)
     
-    # 最大値から外側のマージンを計算
-    max_value = max(values) * 1.1  # 10%マージン
-    outer_margin = 1.2  # ラベルを外側に配置するための係数
-    
     # ラベルのフォントサイズと位置の調整
     for label, angle in zip(ax.get_xticklabels(), angles):
-        angle_rad = np.deg2rad(angle)
-        x = np.cos(angle_rad) * max_value * outer_margin
-        y = np.sin(angle_rad) * max_value * outer_margin
-        
-        # 12時の位置（社会医学）
-        if angle == 0:
-            ha = 'center'
-            va = 'bottom'
-            y *= 1.1  # さらに上に
-        
-        # 6時の位置（統合的臨床能力）
-        elif angle == 180:
-            ha = 'center'
-            va = 'top'
-            y *= 1.1  # さらに下に
-        
-        # 1-5時の位置（30-150度）
-        elif 0 < angle < 180:
+        # 角度に応じてラベルの配置を調整
+        if angle <= 90:
             ha = 'left'
-            va = 'center'
-            x *= 1.1  # さらに左に
-        
-        # 7-11時の位置（210-330度）
-        else:
+            va = 'bottom'
+        elif angle <= 180:
             ha = 'right'
-            va = 'center'
-            x *= 1.1  # さらに右に
-        
-        label.set_position((x, y))
+            va = 'bottom'
+        elif angle <= 270:
+            ha = 'right'
+            va = 'top'
+        else:
+            ha = 'left'
+            va = 'top'
+            
         label.set_fontsize(16)  # フォントサイズ
         label.set_horizontalalignment(ha)
         label.set_verticalalignment(va)
-    
-    # 半径軸の設定
-    rmax = max(max(values), MIN_RADIUS) + 1
-    ax.set_rlim(0, rmax * LABEL_PADDING)  # ラベルの余白を確保
-    
-    # 目盛りの設定
-    rticks = list(range(BASE_VALUE, rmax, TICK_INTERVAL))
-    ax.set_yticks(rticks)
-    # 表示値を実際の値からBASE_VALUE分引く
-    ax.set_yticklabels([str(int(x - BASE_VALUE)) for x in rticks])
 
 def create_radar_chart(counts, sheet_name, out_dir):
     """
@@ -142,7 +113,7 @@ def create_radar_chart(counts, sheet_name, out_dir):
     configure_axes(ax, labels, values)
     
     # タイトルの設定（フォントサイズを大きく）
-    ax.set_title(f'{sheet_name}のAPI分類レーダーチャート', fontsize=18, pad=20)
+    ax.set_title(f'{sheet_name}の臨床実習経験レーダーチャート', fontsize=18, pad=20)
     
     # 画像の保存
     out_path = os.path.join(out_dir, f'{sheet_name}_radar.png')
