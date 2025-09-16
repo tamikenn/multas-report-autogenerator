@@ -35,9 +35,9 @@ def create_radar_chart(counts, sheet_name, out_dir):
     
     # 軸の設定
     ax.set_thetagrids(np.arange(0, 360, 30), labels)
-    rmax = max(max(values), 10) + 1
+    rmax = max(max(values), 6) + 1  # 最小値を調整（データが少ない場合でも見やすく）
     ax.set_rlim(0, rmax)  # 原点を0に設定
-    rticks = list(range(0, rmax, 5))  # 目盛りを0から開始
+    rticks = list(range(0, rmax, 2))  # 目盛りを0から2単位で開始
     ax.set_yticks(rticks)
     
     # タイトル
