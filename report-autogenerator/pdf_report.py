@@ -109,21 +109,18 @@ def create_pdf_report(df, student_name, output_path):
             # 記録の一覧を表形式で表示
             data = []
             for day in sorted(grouped_data.keys()):
-                # Day表記と記録を追加
-                first_entry = True
+                # Day表記を独立した行として追加
+                data.append([
+                    Paragraph(f'Day {day}', styles['CategoryHeader']),
+                    Paragraph('', styles['Japanese'])
+                ])
+                
+                # その日の記録を追加（全て左端から開始）
                 for content in grouped_data[day]:
-                    if first_entry:
-                        # 最初のエントリーにDay表記を含める
-                        data.append([
-                            Paragraph(f'Day {day}', styles['CategoryHeader']),
-                            Paragraph(content, styles['Japanese'])
-                        ])
-                        first_entry = False
-                    else:
-                        data.append([
-                            Paragraph('', styles['Japanese']),
-                            Paragraph(content, styles['Japanese'])
-                        ])
+                    data.append([
+                        Paragraph(content, styles['Japanese']),
+                        Paragraph('', styles['Japanese'])
+                    ])
             
             if data:
                 # テーブルスタイルの設定
@@ -143,8 +140,8 @@ def create_pdf_report(df, student_name, output_path):
                     ('TEXTCOLOR', (0, 0), (0, -1), colors.HexColor('#2F5496')),
                 ])
                 
-                # テーブルの作成（日付列を20%、内容列を80%の幅に設定）
-                table = Table(data, colWidths=[doc.width * 0.2, doc.width * 0.8])
+                # テーブルの作成（内容を1列目に配置し、フルワイドで表示）
+                table = Table(data, colWidths=[doc.width * 0.95, doc.width * 0.05])
                 table.setStyle(table_style)
                 story.append(table)
             
