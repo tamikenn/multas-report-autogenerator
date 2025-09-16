@@ -37,8 +37,13 @@ def create_radar_chart(counts, sheet_name, out_dir):
     ax.set_thetagrids(np.arange(0, 360, 30), labels)
     rmax = max(max(values), 6) + 1  # 最小値を調整（データが少ない場合でも見やすく）
     ax.set_rlim(0, rmax)  # 原点を0に設定
-    rticks = list(range(0, rmax, 2))  # 目盛りを0から2単位で開始
+    
+    # 目盛りの設定
+    # 実際の半径から1を引いて表示（半径1を0として表示）
+    rticks = list(range(1, rmax, 5))  # 1から開始して5刻みで目盛りを設定
     ax.set_yticks(rticks)
+    # 目盛りのラベルを調整（実際の値から1を引く）
+    ax.set_yticklabels([str(int(x - 1)) for x in rticks])
     
     # タイトル
     ax.set_title(f'{sheet_name}のAPI分類レーダーチャート')
