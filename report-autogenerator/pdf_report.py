@@ -146,15 +146,16 @@ def create_pdf_report(df, student_name, output_path):
                     ('FONT', (0, 0), (-1, -1), 'IPAGothic'),
                     ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
                     ('VALIGN', (0, 0), (-1, -1), 'TOP'),
-                    ('LINEBELOW', (0, 0), (-1, -1), 0.5, grey_line, 1, (3, 2)),  # 破線の横罫線
                     ('BACKGROUND', (0, 0), (-1, -1), colors.white),
                     ('TEXTCOLOR', (0, 0), (-1, -1), colors.black),
                     ('LEFTPADDING', (0, 0), (-1, -1), 3),
                     ('RIGHTPADDING', (0, 0), (-1, -1), 3),
-                    ('TOPPADDING', (0, 0), (-1, -1), 3),
-                    ('BOTTOMPADDING', (0, 0), (-1, -1), 3),
+                    ('TOPPADDING', (0, 0), (-1, -1), 8),  # 上部の余白を増やす
+                    ('BOTTOMPADDING', (0, 0), (-1, -1), 8),  # 下部の余白を増やす
                     # Day表記の行のスタイル
                     ('TEXTCOLOR', (0, 0), (0, -1), colors.HexColor('#2F5496')),
+                    # 各エントリー間に破線を追加（Day表記の行は除く）
+                    ('LINEBELOW', (0, 0), (-1, -1), 0.5, grey_line, 1, (3, 2)),  # 破線の横罫線
                 ])
                 
                 # テーブルの作成（内容を1列目に配置し、フルワイドで表示）
