@@ -9,11 +9,15 @@ from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
 from datetime import datetime
 
-# 日本語フォントの設定
-from reportlab.pdfbase.cidfonts import UnicodeCIDFont
+# 日本語フォント設定
 from reportlab.pdfbase.ttfonts import TTFont
+
+# フォント定数
+FONT_NAME = 'IPAGothic'
+FONT_PATH = '/usr/share/fonts/opentype/ipafont-gothic/ipag.ttf'
+
 # IPAフォントを登録
-pdfmetrics.registerFont(TTFont('IPAGothic', '/usr/share/fonts/opentype/ipafont-gothic/ipag.ttf'))
+pdfmetrics.registerFont(TTFont(FONT_NAME, FONT_PATH))
 
 # API分類の名称定義
 CATEGORY_NAMES = {
@@ -43,41 +47,27 @@ def create_pdf_report(df, student_name, output_path):
         bottomMargin=20*mm
     )
     
+    # スタイル定数
+    BLUE_COLOR = colors.HexColor('#2F5496')
+    
+    # 基本スタイルの設定
+    def create_base_style(name, font_size, space_before=6, space_after=6, color=colors.black):
+        return ParagraphStyle(
+            name=name,
+            fontName=FONT_NAME,
+            fontSize=font_size,
+            leading=font_size + 4,  # 行間は文字サイズ+4が標準的
+            spaceBefore=space_before,
+            spaceAfter=space_after,
+            textColor=color
+        )
+    
     # スタイルの設定
     styles = getSampleStyleSheet()
-    styles.add(ParagraphStyle(
-        name='Japanese',
-        fontName='IPAGothic',
-        fontSize=10,
-        leading=14,  # 行間
-        spaceBefore=6,  # 段落前のスペース
-        spaceAfter=6   # 段落後のスペース
-    ))
-    styles.add(ParagraphStyle(
-        name='JapaneseTitle',
-        fontName='IPAGothic',
-        fontSize=14,
-        leading=16,
-        spaceAfter=20
-    ))
-    styles.add(ParagraphStyle(
-        name='CategoryHeader',
-        fontName='IPAGothic',
-        fontSize=12,
-        leading=14,
-        spaceBefore=15,  # カテゴリー前の余白を増やす
-        spaceAfter=8,
-        textColor=colors.HexColor('#2F5496')
-    ))
-    styles.add(ParagraphStyle(
-        name='DayHeader',
-        fontName='IPAGothic',
-        fontSize=11,
-        leading=14,
-        spaceBefore=12,  # Day前の余白を増やす
-        spaceAfter=6,
-        textColor=colors.HexColor('#2F5496')
-    ))
+    styles.add(create_base_style('Japanese', 10))
+    styles.add(create_base_style('JapaneseTitle', 14, space_before=0, space_after=20))
+    styles.add(create_base_style('CategoryHeader', 12, space_before=15, space_after=8, color=BLUE_COLOR))
+    styles.add(create_base_style('DayHeader', 11, space_before=12, space_after=6, color=BLUE_COLOR))
     
     # ドキュメントの構築
     story = []
@@ -115,47 +105,60 @@ def create_pdf_report(df, student_name, output_path):
             story.append(header)
             
             # 記録を日付でグループ化
-            grouped_data = {}
-            for _, entry in category_entries.iterrows():
-                day = entry['DAY']
-                content = str(entry['入力内容']).replace('\n', '<br/>')
-                if day not in grouped_data:
-                    grouped_data[day] = []
-                grouped_data[day].append(content)
+            def group_entries_by_day(entries):
+                grouped = {}
+                for _, entry in entries.iterrows():
+                    day = entry['DAY']
+                    content = str(entry['入力内容']).replace('\n', '<br/>')
+                    grouped.setdefault(day, []).append(content)
+                return grouped
             
-            # 記録の一覧を表形式で表示
-            data = []
-            for day in sorted(grouped_data.keys()):
-                # Day表記を独立した行として追加
-                data.append([
-                    Paragraph(f'Day {day}', styles['DayHeader']),
-                    Paragraph('', styles['Japanese'])
-                ])
-                
-                # その日の記録を追加（短文ごとに別々の行として追加）
-                for content in grouped_data[day]:
+            # テーブルデータの作成
+            def create_table_data(grouped_data, styles):
+                data = []
+                for day in sorted(grouped_data.keys()):
+                    # Day表記を追加
                     data.append([
-                        Paragraph(content, styles['Japanese']),
+                        Paragraph(f'Day {day}', styles['DayHeader']),
                         Paragraph('', styles['Japanese'])
                     ])
+                    
+                    # その日の記録を追加
+                    for content in grouped_data[day]:
+                        data.append([
+                            Paragraph(content, styles['Japanese']),
+                            Paragraph('', styles['Japanese'])
+                        ])
+                return data
+            
+            # テーブルデータの生成
+            grouped_data = group_entries_by_day(category_entries)
+            data = create_table_data(grouped_data, styles)
             
             if data:
                 # テーブルスタイルの設定
-                grey_line = colors.Color(0.8, 0.8, 0.8)  # 薄いグレー
+                GREY_LINE = colors.Color(0.8, 0.8, 0.8)  # 薄いグレー
+                CELL_PADDING = 3  # 基本的なパディング
+                VERTICAL_PADDING = 8  # 上下のパディング
+                
                 table_style = TableStyle([
-                    ('FONT', (0, 0), (-1, -1), 'IPAGothic'),
+                    # フォントと配置
+                    ('FONT', (0, 0), (-1, -1), FONT_NAME),
                     ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
                     ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+                    
+                    # 背景と文字色
                     ('BACKGROUND', (0, 0), (-1, -1), colors.white),
                     ('TEXTCOLOR', (0, 0), (-1, -1), colors.black),
-                    ('LEFTPADDING', (0, 0), (-1, -1), 3),
-                    ('RIGHTPADDING', (0, 0), (-1, -1), 3),
-                    ('TOPPADDING', (0, 0), (-1, -1), 8),  # 上部の余白を増やす
-                    ('BOTTOMPADDING', (0, 0), (-1, -1), 8),  # 下部の余白を増やす
-                    # Day表記の行のスタイル
-                    ('TEXTCOLOR', (0, 0), (0, -1), colors.HexColor('#2F5496')),
-                    # 各エントリー間に破線を追加（Day表記の行は除く）
-                    ('LINEBELOW', (0, 0), (-1, -1), 0.5, grey_line, 1, (3, 2)),  # 破線の横罫線
+                    
+                    # パディング設定
+                    ('LEFTPADDING', (0, 0), (-1, -1), CELL_PADDING),
+                    ('RIGHTPADDING', (0, 0), (-1, -1), CELL_PADDING),
+                    ('TOPPADDING', (0, 0), (-1, -1), VERTICAL_PADDING),
+                    ('BOTTOMPADDING', (0, 0), (-1, -1), VERTICAL_PADDING),
+                    
+                    # 区切り線（破線）
+                    ('LINEBELOW', (0, 0), (-1, -1), 0.5, GREY_LINE, 1, (3, 2))
                 ])
                 
                 # テーブルの作成（内容を1列目に配置し、フルワイドで表示）
