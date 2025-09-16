@@ -12,7 +12,8 @@ def create_radar_chart(counts, sheet_name, out_dir):
     """
     # データを12時から時計回りに配置 [12,1,2,...,11]
     hour_order = [12] + list(range(1, 12))
-    values = [counts.get(h, 0) for h in hour_order]
+    # 各値に1を加算して基準値を設定（0点の位置を半径1の位置に）
+    values = [counts.get(h, 0) + 1 for h in hour_order]
     
     # グラフを閉じるため最初の値を最後にも追加
     values.append(values[0])
@@ -35,8 +36,8 @@ def create_radar_chart(counts, sheet_name, out_dir):
     # 軸の設定
     ax.set_thetagrids(np.arange(0, 360, 30), labels)
     rmax = max(max(values), 10) + 1
-    ax.set_rlim(5, rmax)
-    rticks = list(range(5, rmax, 5))
+    ax.set_rlim(0, rmax)  # 原点を0に設定
+    rticks = list(range(0, rmax, 5))  # 目盛りを0から開始
     ax.set_yticks(rticks)
     
     # タイトル
